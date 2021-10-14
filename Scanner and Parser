@@ -1,0 +1,181 @@
+#lang racket
+
+;ref for string split: https://stackoverflow.com/questions/46435125/splitting-a-string-in-racket
+
+(define ops '(":=" "+" "-" "*" "/" "(" ")"))
+(define addOp '("+" "-"))
+(define multOp '("*" "/"))
+(define lP "(")
+(define numOfLeftP 0)
+(define rP ")")
+(define numOfRightP 0)
+(define assignOp '(":="))
+(define keyWord '("read" "write"))
+(define newline "\n")
+(define digits '("0" "1" "2" "3" "4" "5" "6" "7" "8" "9"))
+(define counter 1)
+(define tokStr '())
+(define endOfFile "$$")
+(define stmtL '("id" "read" "write" "$$"))
+(define expression '("id" "num" "leftPara"))
+(define trm '("id" "num" "leftPara"))
+
+(define (prgmAccpet)
+  (display "Program Accepted"))
+
+(define (addOperator tokS l nLP nRP)
+  (cond
+    [(equal? (first tokS) "addOp") (term (rest tokS) l nLP nRP)]
+    [else
+      (error (string-append "Syntax error at line " (number->string l)))]))
+
+(define (termTail tokS l nLP nRP)
+  (cond
+    [(equal? (first tokS) "addOp") (addOperator tokS l nLP nRP)]
+    [(equal? (first tokS) "rightPara") (define numOfRP (+ nRP 1)) (fac tokS l nLP numOfRP)]
+    [(member (first tokS) stmtL) (prgm tokS l nLP nRP)]
+    [else
+      (error (string-append "Syntax error at line " (number->string l)))]))
+
+(define (multOperator tokS l nLP nRP)
+  (cond
+    [(equal? (first tokS) "multOp") (fac (rest tokS) l nLP nRP)]
+    [else
+      (error (string-append "Syntax error at line " (number->string l)))]))
+
+(define (facT tokS l nLP nRP)
+  (cond
+    [(equal? (first tokS) "multOp") (multOperator tokS l nLP nRP)]
+    [(equal? (first tokS) "addOp") (termTail tokS l nLP nRP)]
+    [(equal? (first tokS) "rightPara") (define numOfRP (+ nRP 1)) (fac tokS l nLP numOfRP)]
+    [(member (first tokS) stmtL) (prgm tokS l nLP nRP)]
+    [(equal? (first tokS) newline) (define incL (+ l 1)) (facT (rest tokS) incL nLP nRP)]
+    [else
+     (error (string-append "Syntax error at line " (number->string l)))]))
+
+(define (fac tokS l nLP nRP)
+  (cond
+    [(equal? (first tokS) "id") (facT (rest tokS) l nLP nRP)]
+    [(equal? (first tokS) "num") (facT (rest tokS) l nLP nRP)]
+    [(and (equal? (first tokS) "leftPara") (member "rightPara" (rest tokS))) (define numOfLP (+ nLP 1)) (expr (rest tokS) l numOfLP nRP)]
+    [(and (equal? (first tokS) "rightPara") (>= nLP nRP)) (facT (rest tokS) l nLP nRP)]
+    [else
+     (error (string-append "Syntax error at line " (number->string l)))]))
+
+(define (term tokS l nLP nRP)
+  (cond
+    [(member (first tokS) trm) (fac tokS l nLP nRP)]
+    [else
+     (error (string-append "Syntax error at line " (number->string l)))]))
+
+(define (expr tokS l nLP nRP)
+  (cond
+    [(member (first tokS) expression) (term tokS l nLP nRP)]
+    [(equal? (first tokS) newline) (define incL (+ l 1)) (expr (rest tokS) incL nLP nRP)]
+    [(equal? (first tokS) endOfFile) (prgmAccpet)]
+    [else
+     (error (string-append "Syntax error at line " (number->string l)))]))
+    
+(define (stmt tokS l nLP nRP)
+  (cond
+    [(and (equal? (first tokS) "id") (equal? (second tokS) "assignOp")) (expr (rest (rest tokS)) l nLP nRP)]
+    [(and (equal? (first tokS) "read") (equal? (second tokS) "id")) (prgm (rest (rest tokS)) l nLP nRP)]
+    [(equal? (first tokS) "write") (expr (rest tokS) l nLP nRP)]
+    [else
+     (error (string-append "Syntax error at line " (number->string l)))]))
+
+(define (stmtList tokS l nLP nRP)
+  (cond
+    [(member (first tokS) stmtL) (stmt tokS l nLP nRP)]
+    [else
+     (error (string-append "Syntax error at line " (number->string l)))]))
+
+(define (prgm tokS l nLP nRP)
+  (cond
+    [(equal? (first tokS) endOfFile) (prgmAccpet)]
+    [(member (first tokS) stmtL) (stmtList tokS l nLP nRP)]
+    [(equal? (first tokS) newline) (define incL (+ l 1)) (prgm (rest tokS) incL nLP nRP)]
+    [else
+     (error (string-append "Syntax error at line " (number->string l)))]))
+
+(define (sepNewline in c r tS)
+  (define item (string-trim in))
+  (define count (+ c 1))
+  (define newTS (append tS (list newline)))
+  
+  (if (equal? item in)
+      (sepAndApp in c r tS)
+      (scan (list item) count r newTS)))
+  
+(define (getOps in c r tS)
+  (cond
+    [(member in addOp) (define add '("addOp")) (define newTS (append tS add)) (scan r c (rest r) newTS)]
+    [(member in multOp) (define mult '("multOp")) (define newTS (append tS mult)) (scan r c (rest r) newTS)]
+    [(equal? in lP) (define left '("leftPara")) (define newTS (append tS left)) (scan r c (rest r) newTS)]
+    [(equal? in rP) (define right '("rightPara")) (define newTS (append tS right)) (scan r c (rest r) newTS)]
+    [(member in assignOp) (define assign '("assignOp")) (define newTS (append tS assign)) (scan r c (rest r) newTS)]
+    [else
+     (error "Never will be called")]))
+
+(define (getKW in c r tS)
+  (cond
+    [(equal? in "read") (define rd '("read")) (define newTS (append tS rd)) (scan r c (rest r) newTS)]
+    [(equal? in "write") (define wr '("write")) (define newTS (append tS wr)) (scan r c (rest r) newTS)]
+    [else
+     (error "Never will be called")]))
+
+(define (getId in c r tS)
+  (define id '("id"))
+  (define newTS (append tS id))
+  
+  (scan r c (rest r) newTS))
+
+(define (getNum in c r tS)
+  (define num '("num"))
+  (define newTS (append tS num))
+  
+  (scan r c (rest r) newTS))
+
+(define (sepAndApp in c r tS)
+  (define sep (string-split in #rx"(?<=.)(?=.)"))
+  (define firstSep (first sep))
+  (define restSep (string-replace (string-join (rest sep)) " " ""))
+  (define newList (append (list restSep) r))
+  
+  (scan (list firstSep) c newList tS))
+
+(define (checkId in c r tS)
+  (if (regexp-match? #px"[[:alpha:]]" (first (string-split in #rx"(?<=.)(?=.)")))
+      (getId in c r tS)
+      (error (string-append "Lexer error at line " (number->string c)))))
+      
+(define (checkInput in c r tS)
+  (cond
+    [(member newline (string-split in #rx"(?<=.)(?=.)")) (sepNewline in c r tS)]
+    [(string-contains? in lP) (sepAndApp in c r tS)]
+    [(string-contains? in rP) (sepAndApp in c r tS)]
+    [(equal? (string-length in) 1) (checkId in c r tS)]
+    [else
+     (checkId in c r tS)]))
+
+(define (end in c tS)
+  (define eof '("$$"))
+  (define newTS (append tS eof))
+  
+  (prgm newTS counter numOfLeftP numOfRightP))
+
+(define (scan in c r tS)
+  (cond
+    [(empty? in) empty]
+    [(equal? (first in) "$$") (end (first in) c tS)]
+    [(member (first in) ops) (getOps (first in) c r tS)]
+    [(member (first in) keyWord) (getKW (first in) c r tS)]
+    [(member (first in) digits) (getNum (first in) c r tS)]
+    [(string? (first in)) (checkInput (first in) c r tS)]
+    [else
+     (error (string-append "Unkonwn Charcter/Symbol/Keyword at line " (number->string c)))]
+    ))
+
+(define (parse userInput)
+  (define input (string-split(file->string userInput) #px"[[:blank:]]"))
+  (scan input counter (rest input) tokStr))

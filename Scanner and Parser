@@ -1,7 +1,5 @@
 #lang racket
 
-;ref for string split: https://stackoverflow.com/questions/46435125/splitting-a-string-in-racket
-
 (define ops '(":=" "+" "-" "*" "/" "(" ")"))
 (define addOp '("+" "-"))
 (define multOp '("*" "/"))

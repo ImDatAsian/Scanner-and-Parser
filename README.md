@@ -1,6 +1,8 @@
 # Scanner-and-Parser
 Create a scanner and parser with calculator grammar to determine if an input has a syntax/lexer error or if the input is accepted.
 
+Grammar: Calculator grammar
+
 References
 
 https://stackoverflow.com/questions/46435125/splitting-a-string-in-racket This was used to separate a string into string characters.

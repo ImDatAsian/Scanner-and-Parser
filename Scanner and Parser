@@ -1,5 +1,7 @@
 #lang racket
 
+; The grammar used to build the paraser and scanner is calculator grammar from the book
+
 ; Variables used to create the scanner and parser
 (define ops '(":=" "+" "-" "*" "/" "(" ")")) ; list of operators allowed in scanner
 (define addOp '("+" "-")) ; add operators based on calc grammar

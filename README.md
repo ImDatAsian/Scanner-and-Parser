@@ -8,3 +8,5 @@ https://stackoverflow.com/questions/46435125/splitting-a-string-in-racket This w
 https://docs.racket-lang.org/reference/pairs.html
 https://docs.racket-lang.org/reference/strings.html#%28def._%28%28lib._racket%2Fstring..rkt%29._string-trim%29%29
 https://docs.racket-lang.org/reference/if.html
+
+Programming Language Pragmatics by Michael L. Scott, Page 76 Psedocode

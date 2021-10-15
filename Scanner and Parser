@@ -1,33 +1,34 @@
 #lang racket
 
-(define ops '(":=" "+" "-" "*" "/" "(" ")"))
-(define addOp '("+" "-"))
-(define multOp '("*" "/"))
+; Variables used to create the scanner and parser
+(define ops '(":=" "+" "-" "*" "/" "(" ")")) ; list of operators allowed in scanner
+(define addOp '("+" "-")) ; add operators based on calc grammar
+(define multOp '("*" "/")) ; mult operators based on calc grammar
 (define lP "(")
 (define numOfLeftP 0)
 (define rP ")")
 (define numOfRightP 0)
 (define assignOp '(":="))
-(define keyWord '("read" "write"))
+(define keyWord '("read" "write")) ; list of keyword for the scanner
 (define newline "\n")
-(define digits '("0" "1" "2" "3" "4" "5" "6" "7" "8" "9"))
-(define counter 1)
-(define tokStr '())
+(define digits '("0" "1" "2" "3" "4" "5" "6" "7" "8" "9")) ; list of numbers for the scanner
+(define counter 1) ; line counter
+(define tokStr '()) ; the list where the tokens will be stored
 (define endOfFile "$$")
 (define stmtL '("id" "read" "write" "$$"))
 (define expression '("id" "num" "leftPara"))
 (define trm '("id" "num" "leftPara"))
 
-(define (prgmAccpet)
+(define (prgmAccpet) ; function where the parser will display that the program is accpeted if all conditions have been met
   (display "Program Accepted"))
 
-(define (addOperator tokS l nLP nRP)
+(define (addOperator tokS l nLP nRP) ; function where the add operators are matched to the current item in the list and being removed if matched
   (cond
     [(equal? (first tokS) "addOp") (term (rest tokS) l nLP nRP)]
     [else
       (error (string-append "Syntax error at line " (number->string l)))]))
 
-(define (termTail tokS l nLP nRP)
+(define (termTail tokS l nLP nRP) ; function where the current item in the list is being checked for a term tail
   (cond
     [(equal? (first tokS) "addOp") (addOperator tokS l nLP nRP)]
     [(equal? (first tokS) "rightPara") (define numOfRP (+ nRP 1)) (fac tokS l nLP numOfRP)]
@@ -35,13 +36,13 @@
     [else
       (error (string-append "Syntax error at line " (number->string l)))]))
 
-(define (multOperator tokS l nLP nRP)
+(define (multOperator tokS l nLP nRP) ; function where the mult operators are matched to the current item in the list and being removed if matched
   (cond
     [(equal? (first tokS) "multOp") (fac (rest tokS) l nLP nRP)]
     [else
       (error (string-append "Syntax error at line " (number->string l)))]))
 
-(define (facT tokS l nLP nRP)
+(define (facT tokS l nLP nRP) ; function where the current item in the list is being checked for a factor tail
   (cond
     [(equal? (first tokS) "multOp") (multOperator tokS l nLP nRP)]
     [(equal? (first tokS) "addOp") (termTail tokS l nLP nRP)]
@@ -51,7 +52,7 @@
     [else
      (error (string-append "Syntax error at line " (number->string l)))]))
 
-(define (fac tokS l nLP nRP)
+(define (fac tokS l nLP nRP) ; function where the current item in the list is being checked for a factor
   (cond
     [(equal? (first tokS) "id") (facT (rest tokS) l nLP nRP)]
     [(equal? (first tokS) "num") (facT (rest tokS) l nLP nRP)]
@@ -60,13 +61,13 @@
     [else
      (error (string-append "Syntax error at line " (number->string l)))]))
 
-(define (term tokS l nLP nRP)
+(define (term tokS l nLP nRP) ; function where the current item in the list is being checked for a term
   (cond
     [(member (first tokS) trm) (fac tokS l nLP nRP)]
     [else
      (error (string-append "Syntax error at line " (number->string l)))]))
 
-(define (expr tokS l nLP nRP)
+(define (expr tokS l nLP nRP) ; function where the current item in the list is being checked for a expression
   (cond
     [(member (first tokS) expression) (term tokS l nLP nRP)]
     [(equal? (first tokS) newline) (define incL (+ l 1)) (expr (rest tokS) incL nLP nRP)]
@@ -74,7 +75,7 @@
     [else
      (error (string-append "Syntax error at line " (number->string l)))]))
     
-(define (stmt tokS l nLP nRP)
+(define (stmt tokS l nLP nRP) ; function where the current item in the list is being checked for a statement
   (cond
     [(and (equal? (first tokS) "id") (equal? (second tokS) "assignOp")) (expr (rest (rest tokS)) l nLP nRP)]
     [(and (equal? (first tokS) "read") (equal? (second tokS) "id")) (prgm (rest (rest tokS)) l nLP nRP)]
@@ -82,13 +83,13 @@
     [else
      (error (string-append "Syntax error at line " (number->string l)))]))
 
-(define (stmtList tokS l nLP nRP)
+(define (stmtList tokS l nLP nRP) ; function where the current item in the list is being checked for a statement list
   (cond
     [(member (first tokS) stmtL) (stmt tokS l nLP nRP)]
     [else
      (error (string-append "Syntax error at line " (number->string l)))]))
 
-(define (prgm tokS l nLP nRP)
+(define (prgm tokS l nLP nRP) ; function that starts the parser and possibly ends it and checks for a vaild input from the token stream
   (cond
     [(equal? (first tokS) endOfFile) (prgmAccpet)]
     [(member (first tokS) stmtL) (stmtList tokS l nLP nRP)]
@@ -96,7 +97,7 @@
     [else
      (error (string-append "Syntax error at line " (number->string l)))]))
 
-(define (sepNewline in c r tS)
+(define (sepNewline in c r tS) ; function that removes the newline attached to any of the strings and makes a token of it in the token stream
   (define item (string-trim in))
   (define count (+ c 1))
   (define newTS (append tS (list newline)))
@@ -105,7 +106,7 @@
       (sepAndApp in c r tS)
       (scan (list item) count r newTS)))
   
-(define (getOps in c r tS)
+(define (getOps in c r tS) ; function that identifies operators and adds them to the token stream
   (cond
     [(member in addOp) (define add '("addOp")) (define newTS (append tS add)) (scan r c (rest r) newTS)]
     [(member in multOp) (define mult '("multOp")) (define newTS (append tS mult)) (scan r c (rest r) newTS)]
@@ -115,26 +116,26 @@
     [else
      (error "Never will be called")]))
 
-(define (getKW in c r tS)
+(define (getKW in c r tS) ; function that identifies keywords and adds them to the token stream
   (cond
     [(equal? in "read") (define rd '("read")) (define newTS (append tS rd)) (scan r c (rest r) newTS)]
     [(equal? in "write") (define wr '("write")) (define newTS (append tS wr)) (scan r c (rest r) newTS)]
     [else
      (error "Never will be called")]))
 
-(define (getId in c r tS)
+(define (getId in c r tS) ; function that identifies ids and adds them to the token stream
   (define id '("id"))
   (define newTS (append tS id))
   
   (scan r c (rest r) newTS))
 
-(define (getNum in c r tS)
+(define (getNum in c r tS) ; function that identifies numbers and adds them to the token stream
   (define num '("num"))
   (define newTS (append tS num))
   
   (scan r c (rest r) newTS))
 
-(define (sepAndApp in c r tS)
+(define (sepAndApp in c r tS) ; function that separates strings that contain ids, read, write, newlines, or etc and keeps the inputs separate
   (define sep (string-split in #rx"(?<=.)(?=.)"))
   (define firstSep (first sep))
   (define restSep (string-replace (string-join (rest sep)) " " ""))
@@ -142,12 +143,12 @@
   
   (scan (list firstSep) c newList tS))
 
-(define (checkId in c r tS)
+(define (checkId in c r tS) ; function that checks if the id is vaild
   (if (regexp-match? #px"[[:alpha:]]" (first (string-split in #rx"(?<=.)(?=.)")))
       (getId in c r tS)
       (error (string-append "Lexer error at line " (number->string c)))))
       
-(define (checkInput in c r tS)
+(define (checkInput in c r tS) ; function that checks if the input is vaild
   (cond
     [(member newline (string-split in #rx"(?<=.)(?=.)")) (sepNewline in c r tS)]
     [(string-contains? in lP) (sepAndApp in c r tS)]
@@ -156,13 +157,13 @@
     [else
      (checkId in c r tS)]))
 
-(define (end in c tS)
+(define (end in c tS) ; function that ends the scanner and starts the parser
   (define eof '("$$"))
   (define newTS (append tS eof))
   
   (prgm newTS counter numOfLeftP numOfRightP))
 
-(define (scan in c r tS)
+(define (scan in c r tS) ; function that performs the check of the first item in the list and sends it to its appropriate function
   (cond
     [(empty? in) empty]
     [(equal? (first in) "$$") (end (first in) c tS)]
@@ -174,6 +175,6 @@
      (error (string-append "Unkonwn Charcter/Symbol/Keyword at line " (number->string c)))]
     ))
 
-(define (parse userInput)
+(define (parse userInput) ; function that takes in the userinput and sends it to the scanner to begin, input must be in string notation -> ""
   (define input (string-split(file->string userInput) #px"[[:blank:]]"))
   (scan input counter (rest input) tokStr))
